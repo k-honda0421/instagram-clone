@@ -1,0 +1,16 @@
+version: '3'
+services:
+  python3:
+    build: ./be
+    container_name: 'django'
+    volumes:
+      - ./be:/root/django
+    ports:
+      - "8000:8000"
+  node:
+    build: ./fe
+    container_name: 'react-insta'
+    volumes:
+      - ./fe:/root/react
+    ports:
+      - 3000:3000
