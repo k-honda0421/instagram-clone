@@ -21,7 +21,9 @@ export const fetchAsyncLogin = createAsyncThunk(
 export const fetchAsyncRegister = createAsyncThunk(
   "auth/register",
   async (authe: PROPS_AUTHEN) => {
-    const res = await axios.post(`${apiUrl}api/register`, authe, {
+    console.log("fetchAsyncRegister");
+    console.log(`${apiUrl}api/register`)
+    const res = await axios.post(`${apiUrl}api/register/`, authe, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -33,7 +35,7 @@ export const fetchAsyncRegister = createAsyncThunk(
 export const fetchAsyncCreateProf = createAsyncThunk(
   "profile/post",
   async (nickName: PROPS_NICKNAME) => {
-    const res = await axios.post(`${apiUrl}api/profile`, nickName, {
+    const res = await axios.post(`${apiUrl}api/profile/`, nickName, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `JWT ${localStorage.localJWT}`
@@ -51,7 +53,7 @@ export const fetchAsyncUpdateProf = createAsyncThunk(
     // imgが渡されれば
     profile.img && uploadData.append("img", profile.img, profile.img.name);
     const res = await axios.put(
-      `${apiUrl}api/profile/${profile.id}`,
+      `${apiUrl}api/profile/${profile.id}/`,
       uploadData,
       {
         headers: {
@@ -67,7 +69,7 @@ export const fetchAsyncUpdateProf = createAsyncThunk(
 export const fetchAsyncGetMyProf = createAsyncThunk(
   "profile/get",
   async () => {
-    const res = await axios.get(`${apiUrl}api/myprofile`, {
+    const res = await axios.get(`${apiUrl}api/myprofile/`, {
       headers: {
         Authorization: `JWT ${localStorage.localJWT}`
       },
@@ -76,10 +78,10 @@ export const fetchAsyncGetMyProf = createAsyncThunk(
   }
 );
 
-export const fetchAsyncGetMyProfs = createAsyncThunk(
+export const fetchAsyncGetProfs = createAsyncThunk(
   "profiles/get",
   async () => {
-    const res = await axios.get(`${apiUrl}api/profile`, {
+    const res = await axios.get(`${apiUrl}api/profile/`, {
       headers: {
         Authorization: `JWT ${localStorage.localJWT}`
       },
@@ -140,7 +142,31 @@ export const authSlice = createSlice({
     editNickname(state, action) {
       state.myProfile.nickName = action.payload;
     }
-  }
+  },
+  extraReducers: (builder) => {
+    // fetchAsyncLoginが正常に終了した場合
+    // localStorageに取得したjwttokenを入れる
+    builder.addCase(fetchAsyncLogin.fulfilled, (state, action) => {
+      localStorage.setItem("localJWT", action.payload.access);
+    });
+    builder.addCase(fetchAsyncCreateProf.fulfilled, (state, action) => {
+      state.myProfile = action.payload;
+    });
+    builder.addCase(fetchAsyncGetMyProf.fulfilled, (state, action) => {
+      console.log(action.payload);
+      state.myProfile = action.payload;
+    });
+    builder.addCase(fetchAsyncGetProfs.fulfilled, (state, action) => {
+      // action.payloadはfetchAsyncGetProfsの返り血
+      state.profiles = action.payload;
+    });
+    builder.addCase(fetchAsyncUpdateProf.fulfilled, (state, action) => {
+      state.myProfile = action.payload;
+      state.profiles = state.profiles.map((prof) =>
+        prof.id === action.payload.id ? action.payload : prof
+      );
+    });
+  },
 });
 
 export const {
@@ -155,6 +181,11 @@ export const {
   editNickname,
 } = authSlice.actions;
 
-export const selectCount = (state: RootState) => state.counter.value;
+export const selectIsLoadingAuth = (state: RootState) => state.auth.isLoadingAuth;
+export const selectOpenSignUp = (state: RootState) => state.auth.openSignUp;
+export const selectOpenSignIn = (state: RootState) => state.auth.openSignIn;
+export const selectOpenProfile = (state: RootState) => state.auth.openProfile;
+export const selectProfile = (state: RootState) => state.auth.myProfile;
+export const selectProfiles = (state: RootState) => state.auth.profiles;
 
 export default authSlice.reducer;
